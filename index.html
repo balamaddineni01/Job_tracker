@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Application Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f4;
+    --bg-tertiary: #eeede9;
+    --text: #1a1a18;
+    --text-secondary: #6b6b67;
+    --border: rgba(0,0,0,0.12);
+    --border-hover: rgba(0,0,0,0.25);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    --blue-bg: #E6F1FB; --blue-text: #185FA5;
+    --green-bg: #EAF3DE; --green-text: #3B6D11;
+    --purple-bg: #EEEDFE; --purple-text: #534AB7;
+    --red-bg: #FCEBEB; --red-text: #A32D2D;
+    --amber-bg: #FAEEDA; --amber-text: #854F0B;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text: #f0efe9;
+      --text-secondary: #9a9a94;
+      --border: rgba(255,255,255,0.1);
+      --border-hover: rgba(255,255,255,0.22);
+      --blue-bg: #0c2d4e; --blue-text: #85B7EB;
+      --green-bg: #172d08; --green-text: #97C459;
+      --purple-bg: #1e1a4a; --purple-text: #AFA9EC;
+      --red-bg: #2e1010; --red-text: #F09595;
+      --amber-bg: #2e1e06; --amber-text: #FAC775;
+    }
+  }
+  body { font-family: var(--font); background: var(--bg-tertiary); color: var(--text); min-height: 100vh; }
+  .app-shell { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+  header { margin-bottom: 28px; }
+  header h1 { font-size: 22px; font-weight: 600; color: var(--text); }
+  header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 9px 18px; font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: var(--font); transition: color 0.15s; }
+  .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+  .tab:hover:not(.active) { color: var(--text); }
+  .section { display: none; }
+  .section.active { display: block; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 16px; }
+  .stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .stat-num { font-size: 32px; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+  .form-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%; font-family: var(--font); font-size: 14px; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--bg-secondary); color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--border-hover); box-shadow: 0 0 0 3px rgba(0,0,0,0.06);
+  }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+  .btn-primary { background: var(--text); color: var(--bg); border: none; padding: 11px 20px; border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer; width: 100%; margin-top: 6px; font-family: var(--font); transition: opacity 0.15s; }
+  .btn-primary:hover { opacity: 0.82; }
+  .btn-secondary { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); padding: 9px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: border-color 0.15s; }
+  .btn-secondary:hover { border-color: var(--border-hover); }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { padding: 6px 14px; border-radius: 99px; font-size: 13px; cursor: pointer; border: 1px solid var(--border); background: none; color: var(--text-secondary); font-family: var(--font); transition: all 0.15s; }
+  .chip.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .chip:hover:not(.active) { border-color: var(--border-hover); color: var(--text); }
+  .apps-list { display: flex; flex-direction: column; gap: 8px; }
+  .app-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+  .app-company { font-size: 15px; font-weight: 600; color: var(--text); }
+  .app-role { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .app-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .meta-item { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; }
+  .app-jd { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.6; border-top: 1px solid var(--border); padding-top: 8px; }
+  .app-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+  .app-actions select { font-size: 12px; padding: 5px 8px; width: 116px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text); font-family: var(--font); cursor: pointer; }
+  .app-actions input[type="date"] { font-size: 12px; padding: 5px 8px; width: 136px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text); font-family: var(--font); }
+  .badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+  .b-applied { background: var(--blue-bg); color: var(--blue-text); }
+  .b-interview { background: var(--green-bg); color: var(--green-text); }
+  .b-offer { background: var(--purple-bg); color: var(--purple-text); }
+  .b-rejected { background: var(--red-bg); color: var(--red-text); }
+  .section-title { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+  .section-title:not(:first-child) { margin-top: 28px; }
+  .empty { text-align: center; padding: 32px; color: var(--text-secondary); font-size: 14px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+  .portal-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .portal-name { width: 120px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 6px; background: var(--bg-secondary); border-radius: 99px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: var(--text); transition: width 0.4s ease; }
+  .portal-count { width: 28px; text-align: right; font-size: 13px; font-weight: 500; color: var(--text); }
+  .setup-block { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 12px; }
+  .setup-block h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+  .setup-block p { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+  .setup-block p + p { margin-top: 6px; }
+  code { font-family: var(--font-mono); font-size: 12px; background: var(--bg-secondary); border: 1px solid var(--border); padding: 2px 7px; border-radius: 5px; color: var(--text); }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .error-msg { color: var(--red-text); font-size: 13px; margin-bottom: 10px; display: none; background: var(--red-bg); padding: 8px 12px; border-radius: var(--radius-md); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 22px; border-radius: 99px; font-size: 13px; font-weight: 500; z-index: 9999; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .search-bar { margin-bottom: 14px; }
+  .search-bar input { width: 100%; font-family: var(--font); font-size: 14px; padding: 9px 14px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-secondary); color: var(--text); outline: none; }
+  .search-bar input:focus { border-color: var(--border-hover); }
+  @media (max-width: 560px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stats-grid .stat-card:last-child { grid-column: span 2; }
+    .form-grid { grid-template-columns: 1fr; }
+    .app-card { grid-template-columns: 1fr; }
+    .app-actions { flex-direction: row; align-items: center; }
+  }
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <h1>Job Application Tracker</h1>
+    <p>Log, track, and monitor your job search in one place.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('log', this)">Log application</button>
+    <button class="tab" onclick="switchTab('apps', this)">My applications</button>
+    <button class="tab" onclick="switchTab('stats', this)">Stats</button>
+    <button class="tab" onclick="switchTab('setup', this)">Sheet setup</button>
+  </div>
+
+  <!-- LOG -->
+  <div id="tab-log" class="section active">
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="field"><label>Company name *</label><input type="text" id="f-company" placeholder="e.g. Stripe"></div>
+        <div class="field"><label>Job title *</label><input type="text" id="f-role" placeholder="e.g. Product Manager"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Recruiter email</label><input type="email" id="f-email" placeholder="recruiter@company.com"></div>
+        <div class="field"><label>Location</label><input type="text" id="f-location" placeholder="Austin, TX / Remote"></div>
+      </div>
+      <div class="form-grid">
+        <div class="field"><label>Job portal</label>
+          <select id="f-portal">
+            <option value="">Select portal</option>
+            <option>LinkedIn</option><option>Indeed</option><option>Glassdoor</option>
+            <option>Company website</option><option>AngelList / Wellfound</option>
+            <option>Handshake</option><option>Dice</option><option>ZipRecruiter</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Date applied</label><input type="date" id="f-date"></div>
+      </div>
+      <div class="form-grid full">
+        <div class="field"><label>Job description / notes</label><textarea id="f-jd" placeholder="Paste key requirements, salary range, or any notes..."></textarea></div>
+      </div>
+      <div class="field"><label>Salary range (optional)</label><input type="text" id="f-salary" placeholder="e.g. $90k – $120k" style="margin-bottom:14px;"></div>
+      <div class="error-msg" id="log-error"></div>
+      <button class="btn-primary" onclick="logApp()">Save application</button>
+    </div>
+  </div>
+
+  <!-- APPS -->
+  <div id="tab-apps" class="section">
+    <div class="search-bar"><input type="text" id="search-input" placeholder="Search by company, role, or location..." oninput="renderApps()"></div>
+    <div class="filters">
+      <button class="chip active" onclick="setFilter('all', this)">All</button>
+      <button class="chip" onclick="setFilter('Applied', this)">Applied</button>
+      <button class="chip" onclick="setFilter('Interview', this)">Interview</button>
+      <button class="chip" onclick="setFilter('Offer', this)">Offer</button>
+      <button class="chip" onclick="setFilter('Rejected', this)">Rejected</button>
+    </div>
+    <div class="apps-list" id="apps-list"></div>
+  </div>
+
+  <!-- STATS -->
+  <div id="tab-stats" class="section">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Today</div><div class="stat-num" id="s-today">0</div><div class="stat-sub">applications</div></div>
+      <div class="stat-card"><div class="stat-label">This week</div><div class="stat-num" id="s-week">0</div><div class="stat-sub">Mon – today</div></div>
+      <div class="stat-card"><div class="stat-label">This month</div><div class="stat-num" id="s-month">0</div><div class="stat-sub" id="s-month-label"></div></div>
+    </div>
+    <div class="section-title">Interviews scheduled</div>
+    <div class="apps-list" id="interview-list"></div>
+    <hr class="divider">
+    <div class="section-title">Applications by portal</div>
+    <div id="portal-bar"></div>
+    <hr class="divider">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">Export data</div>
+      <button class="btn-secondary" onclick="exportCSV()">Download CSV</button>
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary);">Export all your applications as a CSV file to paste into Google Sheets.</p>
+  </div>
+
+  <!-- SETUP -->
+  <div id="tab-setup" class="section">
+    <div class="setup-block">
+      <h3>Step 1 — Create your Google Sheet</h3>
+      <p>Go to <strong>sheets.new</strong> and create a new spreadsheet. Name it <em>Job Application Tracker</em>.</p>
+    </div>
+    <div class="setup-block">
+      <h3>Step 2 — Column headers (paste into row 1)</h3>
+      <p>Put these in cells A1 through K1:</p>
+      <p><code>Date | Company | Role | Recruiter Email | Location | Portal | Status | Interview Date | Salary Range | Job Description | Notes</code></p>
+    </div>
+    <div class="setup-block">
+      <h3>Step 3 — Freeze row 1 + enable filters</h3>
+      <p>Select row 1 → View → Freeze → 1 row.</p>
+      <p>Then Data → Create a filter. Now you can instantly filter by status, company, portal, etc.</p>
+    </div>
+    <div class="setup-block">
+      <h3>Step 4 — Add a Summary tab with formulas</h3>
+      <p>Add a second sheet called <em>Summary</em> and use these formulas:</p>
+      <p><code>=COUNTIFS(Sheet1!A:A,">="&TODAY())</code> — today's applications</p>
+      <p><code>=COUNTIFS(Sheet1!A:A,">="&(TODAY()-WEEKDAY(TODAY(),2)+1))</code> — this week</p>
+      <p><code>=COUNTIFS(Sheet1!G:G,"Interview")</code> — total interviews</p>
+    </div>
+    <div class="setup-block">
+      <h3>Step 5 — Import your data</h3>
+      <p>Go to the Stats tab and click <strong>Download CSV</strong>. Then in Google Sheets: File → Import → Upload the CSV → Append to current sheet.</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let apps = JSON.parse(localStorage.getItem('jat_apps_v2') || '[]');
+let currentFilter = 'all';
+const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function save() { localStorage.setItem('jat_apps_v2', JSON.stringify(apps)); }
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  el.classList.add('active');
+  if (tab === 'apps') renderApps();
+  if (tab === 'stats') renderStats();
+}
+
+function logApp() {
+  const company = document.getElementById('f-company').value.trim();
+  const role = document.getElementById('f-role').value.trim();
+  const err = document.getElementById('log-error');
+  if (!company || !role) {
+    err.textContent = 'Company name and job title are required.';
+    err.style.display = 'block'; return;
+  }
+  err.style.display = 'none';
+  apps.unshift({
+    id: Date.now(),
+    date: document.getElementById('f-date').value || todayStr(),
+    company, role,
+    email: document.getElementById('f-email').value.trim(),
+    location: document.getElementById('f-location').value.trim(),
+    portal: document.getElementById('f-portal').value,
+    salary: document.getElementById('f-salary').value.trim(),
+    jd: document.getElementById('f-jd').value.trim(),
+    status: 'Applied',
+    interviewDate: ''
+  });
+  save();
+  ['f-company','f-role','f-email','f-location','f-jd','f-salary'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-portal').value = '';
+  document.getElementById('f-date').value = todayStr();
+  showToast('Application saved!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderApps();
+}
+
+function badgeClass(status) {
+  return { Applied:'b-applied', Interview:'b-interview', Offer:'b-offer', Rejected:'b-rejected' }[status] || 'b-applied';
+}
+
+function renderApps() {
+  const list = document.getElementById('apps-list');
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  let filtered = apps.filter(a => {
+    const matchFilter = currentFilter === 'all' || a.status === currentFilter;
+    const matchSearch = !q || [a.company, a.role, a.location, a.portal, a.email].join(' ').toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">No applications found. Log your first one!</div>'; return;
+  }
+  list.innerHTML = filtered.map(a => `
+    <div class="app-card">
+      <div>
+        <div class="app-company">${esc(a.company)}</div>
+        <div class="app-role">${esc(a.role)}</div>
+        <div class="app-meta">
+          <span class="meta-item">📅 ${a.date}</span>
+          ${a.location ? `<span class="meta-item">📍 ${esc(a.location)}</span>` : ''}
+          ${a.portal ? `<span class="meta-item">🌐 ${esc(a.portal)}</span>` : ''}
+          ${a.email ? `<span class="meta-item">✉️ ${esc(a.email)}</span>` : ''}
+          ${a.salary ? `<span class="meta-item">💰 ${esc(a.salary)}</span>` : ''}
+        </div>
+        ${a.jd ? `<div class="app-jd">${esc(a.jd).substring(0,160)}${a.jd.length>160?'…':''}</div>` : ''}
+      </div>
+      <div class="app-actions">
+        <select onchange="updateStatus(${a.id}, this.value)">
+          <option ${a.status==='Applied'?'selected':''}>Applied</option>
+          <option ${a.status==='Interview'?'selected':''}>Interview</option>
+          <option ${a.status==='Offer'?'selected':''}>Offer</option>
+          <option ${a.status==='Rejected'?'selected':''}>Rejected</option>
+        </select>
+        ${a.status==='Interview' ? `<input type="date" value="${a.interviewDate||''}" onchange="setInterview(${a.id},this.value)" title="Interview date">` : `<span class="badge ${badgeClass(a.status)}">${a.status}</span>`}
+        <button class="btn-secondary" onclick="deleteApp(${a.id})" style="font-size:12px;padding:5px 10px;color:var(--red-text);">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateStatus(id, status) {
+  const a = apps.find(x => x.id === id);
+  if (a) { a.status = status; save(); renderApps(); }
+}
+
+function setInterview(id, date) {
+  const a = apps.find(x => x.id === id);
+  if (a) { a.interviewDate = date; save(); }
+}
+
+function deleteApp(id) {
+  if (!confirm('Delete this application?')) return;
+  apps = apps.filter(a => a.id !== id);
+  save(); renderApps();
+}
+
+function renderStats() {
+  const now = new Date();
+  const t = todayStr();
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7));
+  const weekStart = mon.toISOString().split('T')[0];
+  const monthStart = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
+
+  document.getElementById('s-today').textContent = apps.filter(a => a.date === t).length;
+  document.getElementById('s-week').textContent = apps.filter(a => a.date >= weekStart).length;
+  document.getElementById('s-month').textContent = apps.filter(a => a.date >= monthStart).length;
+  document.getElementById('s-month-label').textContent = months[now.getMonth()];
+
+  const interviews = apps.filter(a => a.status === 'Interview').sort((a,b) => (a.interviewDate||'').localeCompare(b.interviewDate||''));
+  const iList = document.getElementById('interview-list');
+  iList.innerHTML = interviews.length ? interviews.map(a => `
+    <div class="app-card">
+      <div>
+        <div class="app-company">${esc(a.company)}</div>
+        <div class="app-role">${esc(a.role)}</div>
+        <div class="app-meta">
+          ${a.interviewDate ? `<span class="meta-item">📅 Interview: ${a.interviewDate}</span>` : `<span class="meta-item" style="color:var(--amber-text)">⚠️ Date not set</span>`}
+          ${a.email ? `<span class="meta-item">✉️ ${esc(a.email)}</span>` : ''}
+          ${a.location ? `<span class="meta-item">📍 ${esc(a.location)}</span>` : ''}
+        </div>
+      </div>
+      <span class="badge b-interview">Interview</span>
+    </div>
+  `).join('') : '<div class="empty">No interviews yet. Keep applying!</div>';
+
+  const portalCounts = {};
+  apps.forEach(a => { if (a.portal) portalCounts[a.portal] = (portalCounts[a.portal]||0)+1; });
+  const max = Math.max(...Object.values(portalCounts), 1);
+  const pb = document.getElementById('portal-bar');
+  const entries = Object.entries(portalCounts).sort((a,b) => b[1]-a[1]);
+  pb.innerHTML = entries.length ? entries.map(([p,c]) => `
+    <div class="portal-row">
+      <span class="portal-name">${esc(p)}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/max*100)}%"></div></div>
+      <span class="portal-count">${c}</span>
+    </div>
+  `).join('') : '<div class="empty">No portal data yet.</div>';
+}
+
+function exportCSV() {
+  const header = ['Date','Company','Role','Recruiter Email','Location','Portal','Status','Interview Date','Salary Range','Job Description'];
+  const rows = apps.map(a => [a.date,a.company,a.role,a.email,a.location,a.portal,a.status,a.interviewDate,a.salary,a.jd].map(v => '"'+(v||'').replace(/"/g,'""')+'"'));
+  const csv = [header.map(h => '"'+h+'"'), ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url; link.download = 'job_applications_' + todayStr() + '.csv';
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function esc(str) {
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('f-date').value = todayStr();
+</script>
+</body>
+</html>
